@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, nativeTheme } from 'electron'
 import { join, parse } from 'path'
 import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -13,7 +13,7 @@ function createWindow(): void {
     minHeight: 520,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#0f172a',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#0e0e10' : '#fbfbfd',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

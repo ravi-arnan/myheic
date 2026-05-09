@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import logoSrc from './assets/myheic_logo.png'
+import { useTheme } from './useTheme'
 
 type FileStatus = 'pending' | 'converting' | 'done' | 'error'
 
@@ -39,6 +41,7 @@ function App(): React.JSX.Element {
   const [isConverting, setIsConverting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
+  const { theme, toggle } = useTheme()
 
   const addFiles = useCallback((paths: string[]) => {
     setFiles((prev) => {
@@ -102,7 +105,6 @@ function App(): React.JSX.Element {
       dragCounter.current = 0
       setIsDragging(false)
       const dropped = Array.from(e.dataTransfer?.files ?? [])
-      console.log('[drop]', dropped.length, 'files')
       const paths = dropped
         .map((f) => {
           try {
@@ -113,7 +115,6 @@ function App(): React.JSX.Element {
           }
         })
         .filter((p): p is string => Boolean(p))
-      console.log('[drop] resolved paths:', paths)
       if (paths.length > 0) addFiles(paths)
     }
 
@@ -172,63 +173,77 @@ function App(): React.JSX.Element {
     const total = files.length
     const done = files.filter((f) => f.status === 'done').length
     const errors = files.filter((f) => f.status === 'error').length
-    const savedBytes = files
-      .filter((f) => f.status === 'done')
-      .reduce((sum, f) => sum + ((f.inputBytes ?? 0) - (f.outputBytes ?? 0)), 0)
-    return { total, done, errors, savedBytes }
+    return { total, done, errors }
   }, [files])
 
   const canConvert = files.some((f) => f.status === 'pending' || f.status === 'error')
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+    <div className="flex h-full flex-col bg-[color:var(--color-surface)] text-[color:var(--color-ink)]">
+      <header className="flex items-center justify-between border-b border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 font-bold">
-            M
-          </div>
+          <img src={logoSrc} alt="" className="h-9 w-9" draggable={false} />
           <div>
-            <h1 className="text-lg font-semibold leading-tight">MyHeic</h1>
-            <p className="text-xs text-slate-400">
+            <h1 className="text-base font-bold leading-tight tracking-tight">MyHeic</h1>
+            <p className="text-xs text-[color:var(--color-ink-muted)]">
               Konversi HEIC ke JPG — gratis, offline, tanpa batas
             </p>
           </div>
         </div>
-        <div className="text-xs text-slate-500">v0.1.4</div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] text-[color:var(--color-ink-muted)] transition-colors hover:border-[color:var(--color-ink-soft)] hover:text-[color:var(--color-ink)]"
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
+          <span className="text-xs font-medium tabular-nums text-[color:var(--color-ink-soft)]">
+            v0.1.5
+          </span>
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-4 overflow-hidden p-6">
         <div
-          className={`flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 transition-colors ${
+          className={`flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 transition-colors ${
             isDragging
-              ? 'border-indigo-400 bg-indigo-500/10'
-              : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
+              ? 'border-[color:var(--color-brand)] bg-[color:var(--color-brand-subtle)]'
+              : 'border-[color:var(--color-line)] bg-[color:var(--color-surface-soft)] hover:border-[color:var(--color-ink-soft)]'
           }`}
         >
-          <div className="text-base font-medium text-slate-200">
-            Drag & drop file HEIC ke sini
+          <UploadGlyph
+            className={
+              isDragging
+                ? 'text-[color:var(--color-brand)]'
+                : 'text-[color:var(--color-ink-soft)]'
+            }
+          />
+          <div className="text-sm font-semibold text-[color:var(--color-ink)]">
+            {isDragging ? 'Lepaskan untuk upload' : 'Drag & drop file HEIC ke sini'}
           </div>
-          <div className="text-xs text-slate-500">atau</div>
+          <div className="text-xs text-[color:var(--color-ink-soft)]">atau</div>
           <button
             onClick={handlePick}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+            className="rounded-xl bg-[color:var(--color-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-cta)] transition-colors hover:bg-[color:var(--color-brand-dark)]"
           >
             Pilih file
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40">
-          <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2 text-xs text-slate-400">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] shadow-[var(--shadow-whisper)]">
+          <div className="flex items-center justify-between border-b border-[color:var(--color-line)] bg-[color:var(--color-surface-soft)] px-4 py-2.5 text-xs font-medium text-[color:var(--color-ink-muted)]">
             <div>
               {files.length === 0
                 ? 'Belum ada file'
-                : `${files.length} file · ${stats.done} selesai · ${stats.errors} error`}
+                : `${files.length} file · ${stats.done} selesai${stats.errors > 0 ? ` · ${stats.errors} error` : ''}`}
             </div>
             {files.length > 0 && (
               <button
                 onClick={handleClear}
                 disabled={isConverting}
-                className="text-slate-500 hover:text-slate-300 disabled:opacity-40"
+                className="text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)] disabled:opacity-40"
               >
                 Hapus semua
               </button>
@@ -236,17 +251,22 @@ function App(): React.JSX.Element {
           </div>
           <div className="flex-1 overflow-y-auto">
             {files.length === 0 ? (
-              <div className="flex h-full items-center justify-center p-8 text-sm text-slate-500">
+              <div className="flex h-full items-center justify-center p-8 text-sm text-[color:var(--color-ink-soft)]">
                 Tambahkan file untuk mulai konversi.
               </div>
             ) : (
-              <ul className="divide-y divide-slate-800">
+              <ul className="divide-y divide-[color:var(--color-line)]">
                 {files.map((f) => (
-                  <li key={f.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                  <li
+                    key={f.id}
+                    className="flex items-center gap-3 px-4 py-3 text-sm"
+                  >
                     <StatusBadge status={f.status} />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-slate-200">{f.name}</div>
-                      <div className="truncate text-xs text-slate-500">
+                      <div className="truncate font-medium text-[color:var(--color-ink)]">
+                        {f.name}
+                      </div>
+                      <div className="truncate text-xs text-[color:var(--color-ink-soft)]">
                         {f.status === 'done'
                           ? `${formatBytes(f.inputBytes)} → ${formatBytes(f.outputBytes)}${
                               f.inputBytes && f.outputBytes
@@ -261,9 +281,10 @@ function App(): React.JSX.Element {
                     <button
                       onClick={() => handleRemove(f.id)}
                       disabled={isConverting && f.status === 'converting'}
-                      className="text-xs text-slate-500 hover:text-rose-400 disabled:opacity-40"
+                      className="text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)] disabled:opacity-40"
+                      aria-label="Hapus"
                     >
-                      Hapus
+                      <CloseIcon />
                     </button>
                   </li>
                 ))}
@@ -273,10 +294,10 @@ function App(): React.JSX.Element {
         </div>
       </main>
 
-      <footer className="flex flex-wrap items-center gap-4 border-t border-slate-800 px-6 py-4">
+      <footer className="flex flex-wrap items-center gap-4 border-t border-[color:var(--color-line)] bg-[color:var(--color-surface-soft)] px-6 py-4">
         <div className="flex items-center gap-2">
           <span
-            className="cursor-help text-xs text-slate-400"
+            className="cursor-help text-xs font-medium text-[color:var(--color-ink-muted)]"
             title="JPG selalu lebih besar dari HEIC karena kompresi HEIC (HEVC) lebih efisien. Slider ini cuma kontrol kualitas/ukuran JPG-nya, bukan untuk match ukuran HEIC asal. Disarankan 75-85 untuk balance terbaik."
           >
             Quality ⓘ
@@ -289,20 +310,24 @@ function App(): React.JSX.Element {
             value={quality}
             onChange={(e) => setQuality(Number(e.target.value))}
             disabled={isConverting}
-            className="w-32 accent-indigo-500"
+            className="w-32 accent-[color:var(--color-brand)]"
           />
-          <span className="w-8 text-xs tabular-nums text-slate-300">{quality}</span>
-          <span className="text-[10px] uppercase tracking-wide text-slate-500">
+          <span className="w-8 text-xs font-semibold tabular-nums text-[color:var(--color-ink)]">
+            {quality}
+          </span>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--color-ink-soft)]">
             {qualityLabel(quality)}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-400">Output</label>
+          <label className="text-xs font-medium text-[color:var(--color-ink-muted)]">
+            Output
+          </label>
           {outputDir ? (
             <div className="flex items-center gap-1">
               <span
-                className="max-w-[260px] truncate rounded bg-slate-800 px-2 py-1 text-xs text-slate-300"
+                className="max-w-[260px] truncate rounded-lg border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-2 py-1 text-xs text-[color:var(--color-ink)]"
                 title={outputDir}
               >
                 {outputDir}
@@ -310,7 +335,7 @@ function App(): React.JSX.Element {
               <button
                 onClick={handleClearOutput}
                 disabled={isConverting}
-                className="text-xs text-slate-500 hover:text-rose-400 disabled:opacity-40"
+                className="text-xs text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)] disabled:opacity-40"
               >
                 ×
               </button>
@@ -319,7 +344,7 @@ function App(): React.JSX.Element {
             <button
               onClick={handlePickOutput}
               disabled={isConverting}
-              className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+              className="rounded-lg border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-2 py-1 text-xs font-medium text-[color:var(--color-ink)] transition-colors hover:border-[color:var(--color-ink-soft)] disabled:opacity-40"
             >
               Folder asal
             </button>
@@ -330,7 +355,7 @@ function App(): React.JSX.Element {
           {stats.done > 0 && (
             <button
               onClick={handleOpenOutput}
-              className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-slate-600 hover:bg-slate-800"
+              className="rounded-xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--color-ink)] transition-colors hover:border-[color:var(--color-ink-soft)]"
             >
               Buka folder
             </button>
@@ -338,7 +363,7 @@ function App(): React.JSX.Element {
           <button
             onClick={handleConvertAll}
             disabled={!canConvert || isConverting}
-            className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-[color:var(--color-brand)] px-5 py-2 text-sm font-semibold text-white shadow-[var(--shadow-cta)] transition-colors hover:bg-[color:var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >
             {isConverting ? 'Converting…' : 'Convert'}
           </button>
@@ -350,18 +375,107 @@ function App(): React.JSX.Element {
 
 function StatusBadge({ status }: { status: FileStatus }): React.JSX.Element {
   const map: Record<FileStatus, { label: string; className: string }> = {
-    pending: { label: 'Pending', className: 'bg-slate-700 text-slate-300' },
-    converting: { label: 'Converting', className: 'bg-amber-500/20 text-amber-300' },
-    done: { label: 'Done', className: 'bg-emerald-500/20 text-emerald-300' },
-    error: { label: 'Error', className: 'bg-rose-500/20 text-rose-300' }
+    pending: {
+      label: 'Pending',
+      className: 'bg-[color:var(--color-line-soft)] text-[color:var(--color-ink-muted)]'
+    },
+    converting: {
+      label: 'Converting',
+      className: 'bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-ink)]'
+    },
+    done: {
+      label: 'Done',
+      className: 'bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]'
+    },
+    error: {
+      label: 'Error',
+      className: 'bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-ink)]'
+    }
   }
   const item = map[status]
   return (
     <span
-      className={`inline-flex h-6 w-20 items-center justify-center rounded-full text-[10px] font-medium uppercase tracking-wide ${item.className}`}
+      className={`inline-flex h-5 w-20 items-center justify-center rounded-full text-[10px] font-semibold uppercase tracking-wide ${item.className}`}
     >
       {item.label}
     </span>
+  )
+}
+
+function UploadGlyph({ className }: { className?: string }): React.JSX.Element {
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={className}
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  )
+}
+
+function CloseIcon(): React.JSX.Element {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function SunIcon(): React.JSX.Element {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  )
+}
+
+function MoonIcon(): React.JSX.Element {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
   )
 }
 

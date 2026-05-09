@@ -1,4 +1,76 @@
 @import 'tailwindcss';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-brand: #7132f5;
+  --color-brand-dark: #5741d8;
+  --color-brand-deep: #5b1ecf;
+  --color-brand-subtle: var(--color-brand-subtle-value);
+  --color-ink: var(--color-ink-value);
+  --color-ink-muted: var(--color-ink-muted-value);
+  --color-ink-soft: var(--color-ink-soft-value);
+  --color-line: var(--color-line-value);
+  --color-line-soft: var(--color-line-soft-value);
+  --color-surface: var(--color-surface-value);
+  --color-surface-soft: var(--color-surface-soft-value);
+  --color-success-bg: var(--color-success-bg-value);
+  --color-success-ink: var(--color-success-ink-value);
+  --color-warning-bg: var(--color-warning-bg-value);
+  --color-warning-ink: var(--color-warning-ink-value);
+  --color-danger-bg: var(--color-danger-bg-value);
+  --color-danger-ink: var(--color-danger-ink-value);
+  --shadow-whisper: var(--shadow-whisper-value);
+  --shadow-card: var(--shadow-card-value);
+  --shadow-cta: var(--shadow-cta-value);
+  --font-sans: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  --color-brand-subtle-value: rgba(113, 50, 245, 0.12);
+  --color-ink-value: #101114;
+  --color-ink-muted-value: #686b82;
+  --color-ink-soft-value: #9497a9;
+  --color-line-value: #e6e6eb;
+  --color-line-soft-value: rgba(104, 107, 130, 0.14);
+  --color-surface-value: #fbfbfd;
+  --color-surface-soft-value: #f5f5f7;
+  --color-success-bg-value: rgba(20, 158, 97, 0.16);
+  --color-success-ink-value: #026b3f;
+  --color-warning-bg-value: rgba(245, 158, 11, 0.16);
+  --color-warning-ink-value: #92400e;
+  --color-danger-bg-value: rgba(244, 63, 94, 0.14);
+  --color-danger-ink-value: #be123c;
+  --shadow-whisper-value: 0 1px 4px rgba(16, 24, 40, 0.04);
+  --shadow-card-value: 0 4px 24px rgba(0, 0, 0, 0.04);
+  --shadow-cta-value: 0 8px 24px rgba(113, 50, 245, 0.18);
+}
+
+.dark {
+  color-scheme: dark;
+  --color-brand-subtle-value: rgba(139, 92, 246, 0.18);
+  --color-ink-value: #f5f5f7;
+  --color-ink-muted-value: #b1b3c1;
+  --color-ink-soft-value: #74778a;
+  --color-line-value: #2a2a30;
+  --color-line-soft-value: rgba(180, 183, 200, 0.12);
+  --color-surface-value: #0e0e10;
+  --color-surface-soft-value: #18181b;
+  --color-success-bg-value: rgba(20, 158, 97, 0.22);
+  --color-success-ink-value: #6ee7b7;
+  --color-warning-bg-value: rgba(245, 158, 11, 0.22);
+  --color-warning-ink-value: #fcd34d;
+  --color-danger-bg-value: rgba(244, 63, 94, 0.22);
+  --color-danger-ink-value: #fda4af;
+  --shadow-whisper-value: 0 1px 4px rgba(0, 0, 0, 0.5);
+  --shadow-card-value: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-cta-value: 0 8px 24px rgba(113, 50, 245, 0.45);
+}
 
 html,
 body,
@@ -8,13 +80,13 @@ body,
 
 body {
   margin: 0;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    sans-serif;
-  background-color: #0f172a;
-  color: #f8fafc;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   user-select: none;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
 }
