@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type FileStatus = 'pending' | 'converting' | 'done' | 'error'
 
@@ -24,10 +24,18 @@ function fileNameFromPath(p: string): string {
   return p.split(/[\\/]/).pop() ?? p
 }
 
+function qualityLabel(q: number): string {
+  if (q >= 95) return 'Maksimum'
+  if (q >= 85) return 'Tinggi'
+  if (q >= 70) return 'Disarankan'
+  if (q >= 50) return 'Hemat'
+  return 'Rendah'
+}
+
 function App(): React.JSX.Element {
   const [files, setFiles] = useState<FileItem[]>([])
   const [outputDir, setOutputDir] = useState<string | null>(null)
-  const [quality, setQuality] = useState(90)
+  const [quality, setQuality] = useState(80)
   const [isConverting, setIsConverting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
@@ -68,41 +76,58 @@ function App(): React.JSX.Element {
     setFiles([])
   }
 
-  const handleDragEnter = (e: React.DragEvent): void => {
-    e.preventDefault()
-    e.stopPropagation()
-    dragCounter.current += 1
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      setIsDragging(true)
+  useEffect(() => {
+    const onDragEnter = (e: DragEvent): void => {
+      e.preventDefault()
+      dragCounter.current += 1
+      const types = e.dataTransfer?.types ?? []
+      if (Array.from(types).includes('Files')) {
+        setIsDragging(true)
+      }
     }
-  }
-
-  const handleDragLeave = (e: React.DragEvent): void => {
-    e.preventDefault()
-    e.stopPropagation()
-    dragCounter.current -= 1
-    if (dragCounter.current <= 0) {
+    const onDragOver = (e: DragEvent): void => {
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+    }
+    const onDragLeave = (e: DragEvent): void => {
+      e.preventDefault()
+      dragCounter.current -= 1
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0
+        setIsDragging(false)
+      }
+    }
+    const onDrop = (e: DragEvent): void => {
+      e.preventDefault()
       dragCounter.current = 0
       setIsDragging(false)
+      const dropped = Array.from(e.dataTransfer?.files ?? [])
+      console.log('[drop]', dropped.length, 'files')
+      const paths = dropped
+        .map((f) => {
+          try {
+            return window.api.getPathForFile(f)
+          } catch (err) {
+            console.error('[getPathForFile failed]', err)
+            return ''
+          }
+        })
+        .filter((p): p is string => Boolean(p))
+      console.log('[drop] resolved paths:', paths)
+      if (paths.length > 0) addFiles(paths)
     }
-  }
 
-  const handleDragOver = (e: React.DragEvent): void => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const handleDrop = (e: React.DragEvent): void => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    dragCounter.current = 0
-    const dropped = Array.from(e.dataTransfer.files)
-    const paths = dropped
-      .map((f) => window.api.getPathForFile(f))
-      .filter((p): p is string => Boolean(p))
-    addFiles(paths)
-  }
+    window.addEventListener('dragenter', onDragEnter)
+    window.addEventListener('dragover', onDragOver)
+    window.addEventListener('dragleave', onDragLeave)
+    window.addEventListener('drop', onDrop)
+    return () => {
+      window.removeEventListener('dragenter', onDragEnter)
+      window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragleave', onDragLeave)
+      window.removeEventListener('drop', onDrop)
+    }
+  }, [addFiles])
 
   const updateFile = (id: string, patch: Partial<FileItem>): void => {
     setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)))
@@ -169,15 +194,11 @@ function App(): React.JSX.Element {
             </p>
           </div>
         </div>
-        <div className="text-xs text-slate-500">v0.1.0</div>
+        <div className="text-xs text-slate-500">v0.1.2</div>
       </header>
 
       <main className="flex flex-1 flex-col gap-4 overflow-hidden p-6">
         <div
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
           className={`flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 transition-colors ${
             isDragging
               ? 'border-indigo-400 bg-indigo-500/10'
@@ -227,7 +248,11 @@ function App(): React.JSX.Element {
                       <div className="truncate font-medium text-slate-200">{f.name}</div>
                       <div className="truncate text-xs text-slate-500">
                         {f.status === 'done'
-                          ? `${formatBytes(f.inputBytes)} → ${formatBytes(f.outputBytes)}`
+                          ? `${formatBytes(f.inputBytes)} → ${formatBytes(f.outputBytes)}${
+                              f.inputBytes && f.outputBytes
+                                ? ` (${(f.outputBytes / f.inputBytes).toFixed(1)}x)`
+                                : ''
+                            }`
                           : f.status === 'error'
                             ? f.error ?? 'Gagal konversi'
                             : f.inputPath}
@@ -250,7 +275,12 @@ function App(): React.JSX.Element {
 
       <footer className="flex flex-wrap items-center gap-4 border-t border-slate-800 px-6 py-4">
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-400">Quality</label>
+          <span
+            className="cursor-help text-xs text-slate-400"
+            title="JPG selalu lebih besar dari HEIC karena kompresi HEIC (HEVC) lebih efisien. Slider ini cuma kontrol kualitas/ukuran JPG-nya, bukan untuk match ukuran HEIC asal. Disarankan 75-85 untuk balance terbaik."
+          >
+            Quality ⓘ
+          </span>
           <input
             type="range"
             min={10}
@@ -262,6 +292,9 @@ function App(): React.JSX.Element {
             className="w-32 accent-indigo-500"
           />
           <span className="w-8 text-xs tabular-nums text-slate-300">{quality}</span>
+          <span className="text-[10px] uppercase tracking-wide text-slate-500">
+            {qualityLabel(quality)}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">

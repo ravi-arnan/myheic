@@ -1,6 +1,6 @@
 {
   "name": "myheic-desktop",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "MyHeic — convert HEIC ke JPG, gratis dan offline.",
   "main": "./out/main/index.js",
   "author": "Ravi",
