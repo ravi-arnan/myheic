@@ -14,7 +14,7 @@ asarUnpack:
 win:
   executableName: MyHeic
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: MyHeic-Setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
