@@ -194,7 +194,7 @@ function App(): React.JSX.Element {
             </p>
           </div>
         </div>
-        <div className="text-xs text-slate-500">v0.1.3</div>
+        <div className="text-xs text-slate-500">v0.1.4</div>
       </header>
 
       <main className="flex flex-1 flex-col gap-4 overflow-hidden p-6">
