@@ -31,12 +31,14 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
-  maintainer: electronjs.org
-  category: Utility
+  maintainer: ravi-arnan
+  category: Graphics
+  synopsis: Convert HEIC to JPG, free and offline
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: MyHeic-Linux-x86_64.${ext}
+deb:
+  artifactName: MyHeic-Linux-amd64.${ext}
 npmRebuild: false
 publish:
   provider: generic

@@ -40,17 +40,64 @@ jobs:
         with:
           name: myheic-windows
           path: |
-            dist/*-setup.exe
+            dist/MyHeic-Setup.exe
             dist/latest.yml
           if-no-files-found: error
 
-      - name: Create GitHub Release
+      - name: Create / update GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/*-setup.exe
+            dist/MyHeic-Setup.exe
             dist/latest.yml
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Linux packages
+        run: pnpm build:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: myheic-linux
+          path: |
+            dist/MyHeic-Linux-*.AppImage
+            dist/MyHeic-Linux-*.deb
+            dist/latest-linux.yml
+          if-no-files-found: error
+
+      - name: Create / update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/MyHeic-Linux-*.AppImage
+            dist/MyHeic-Linux-*.deb
+            dist/latest-linux.yml
           draft: false
           prerelease: false
           generate_release_notes: true
