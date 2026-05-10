@@ -14,9 +14,16 @@ export interface ConvertResult {
   outputBytes: number
 }
 
+export interface FolderPickResult {
+  folder: string | null
+  files: string[]
+}
+
 const api = {
   selectFiles: (): Promise<string[]> => ipcRenderer.invoke('dialog:openFiles'),
   selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('dialog:openDirectory'),
+  selectFolderForFiles: (): Promise<FolderPickResult> =>
+    ipcRenderer.invoke('dialog:pickFolderForFiles'),
   convertHeic: (options: ConvertOptions): Promise<ConvertResult> =>
     ipcRenderer.invoke('convert:heic', options),
   openPath: (target: string): Promise<void> => ipcRenderer.invoke('shell:openPath', target),

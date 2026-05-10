@@ -40,8 +40,15 @@ function App(): React.JSX.Element {
   const [quality, setQuality] = useState(80)
   const [isConverting, setIsConverting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const dragCounter = useRef(0)
   const { theme, toggle } = useTheme()
+
+  useEffect(() => {
+    if (!notice) return
+    const id = setTimeout(() => setNotice(null), 5000)
+    return () => clearTimeout(id)
+  }, [notice])
 
   const addFiles = useCallback((paths: string[]) => {
     setFiles((prev) => {
@@ -62,6 +69,18 @@ function App(): React.JSX.Element {
   const handlePick = async (): Promise<void> => {
     const paths = await window.api.selectFiles()
     addFiles(paths)
+  }
+
+  const handlePickFolder = async (): Promise<void> => {
+    const result = await window.api.selectFolderForFiles()
+    if (!result.folder) return
+    if (result.files.length === 0) {
+      const folderName = fileNameFromPath(result.folder)
+      setNotice(`Tidak ada file HEIC ditemukan di folder "${folderName}".`)
+      return
+    }
+    addFiles(result.files)
+    setNotice(`${result.files.length} file HEIC ditambahkan dari folder.`)
   }
 
   const handlePickOutput = async (): Promise<void> => {
@@ -200,7 +219,7 @@ function App(): React.JSX.Element {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
           <span className="text-xs font-medium tabular-nums text-[color:var(--color-ink-soft)]">
-            v0.1.5
+            v0.1.6
           </span>
         </div>
       </header>
@@ -224,13 +243,28 @@ function App(): React.JSX.Element {
             {isDragging ? 'Lepaskan untuk upload' : 'Drag & drop file HEIC ke sini'}
           </div>
           <div className="text-xs text-[color:var(--color-ink-soft)]">atau</div>
-          <button
-            onClick={handlePick}
-            className="rounded-xl bg-[color:var(--color-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-cta)] transition-colors hover:bg-[color:var(--color-brand-dark)]"
-          >
-            Pilih file
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePick}
+              className="rounded-xl bg-[color:var(--color-brand)] px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-cta)] transition-colors hover:bg-[color:var(--color-brand-dark)]"
+            >
+              Pilih file
+            </button>
+            <button
+              onClick={handlePickFolder}
+              className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--color-ink)] transition-colors hover:border-[color:var(--color-brand)] hover:text-[color:var(--color-brand)]"
+            >
+              <FolderIcon />
+              Pilih folder
+            </button>
+          </div>
         </div>
+
+        {notice && (
+          <div className="rounded-xl border border-[color:var(--color-line)] bg-[color:var(--color-brand-subtle)] px-4 py-2.5 text-sm text-[color:var(--color-ink)]">
+            {notice}
+          </div>
+        )}
 
         <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] shadow-[var(--shadow-whisper)]">
           <div className="flex items-center justify-between border-b border-[color:var(--color-line)] bg-[color:var(--color-surface-soft)] px-4 py-2.5 text-xs font-medium text-[color:var(--color-ink-muted)]">
@@ -322,7 +356,7 @@ function App(): React.JSX.Element {
 
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-[color:var(--color-ink-muted)]">
-            Output
+            Simpan ke
           </label>
           {outputDir ? (
             <div className="flex items-center gap-1">
@@ -335,6 +369,7 @@ function App(): React.JSX.Element {
               <button
                 onClick={handleClearOutput}
                 disabled={isConverting}
+                title="Reset ke folder asal file"
                 className="text-xs text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)] disabled:opacity-40"
               >
                 ×
@@ -344,9 +379,10 @@ function App(): React.JSX.Element {
             <button
               onClick={handlePickOutput}
               disabled={isConverting}
-              className="rounded-lg border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-2 py-1 text-xs font-medium text-[color:var(--color-ink)] transition-colors hover:border-[color:var(--color-ink-soft)] disabled:opacity-40"
+              title="Default: simpan di folder yang sama dengan file HEIC asalnya"
+              className="rounded-lg border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-2 py-1 text-xs font-medium text-[color:var(--color-ink-muted)] transition-colors hover:border-[color:var(--color-ink-soft)] hover:text-[color:var(--color-ink)] disabled:opacity-40"
             >
-              Folder asal
+              Folder yang sama (klik untuk ganti)
             </button>
           )}
         </div>
@@ -419,6 +455,24 @@ function UploadGlyph({ className }: { className?: string }): React.JSX.Element {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="17 8 12 3 7 8" />
       <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  )
+}
+
+function FolderIcon(): React.JSX.Element {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
     </svg>
   )
 }

@@ -70,6 +70,46 @@ ipcMain.handle('dialog:openDirectory', async () => {
   return result.filePaths[0] ?? null
 })
 
+const HEIC_EXT = /\.(heic|heif)$/i
+const MAX_SCAN_DEPTH = 5
+
+async function listHeicInDirectory(rootDir: string): Promise<string[]> {
+  const found: string[] = []
+  async function walk(currentDir: string, depth: number): Promise<void> {
+    if (depth > MAX_SCAN_DEPTH) return
+    let entries: import('fs').Dirent[]
+    try {
+      entries = await fs.readdir(currentDir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue
+      const fullPath = join(currentDir, entry.name)
+      if (entry.isDirectory()) {
+        await walk(fullPath, depth + 1)
+      } else if (entry.isFile() && HEIC_EXT.test(entry.name)) {
+        found.push(fullPath)
+      }
+    }
+  }
+  await walk(rootDir, 0)
+  found.sort((a, b) => a.localeCompare(b))
+  return found
+}
+
+ipcMain.handle('dialog:pickFolderForFiles', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Pilih folder berisi file HEIC',
+    properties: ['openDirectory']
+  })
+  if (result.canceled) return { folder: null, files: [] }
+  const folder = result.filePaths[0]
+  if (!folder) return { folder: null, files: [] }
+  const files = await listHeicInDirectory(folder)
+  return { folder, files }
+})
+
 ipcMain.handle('shell:openPath', async (_event, target: string) => {
   await shell.openPath(target)
 })

@@ -13,9 +13,15 @@ export interface ConvertResult {
   outputBytes: number
 }
 
+export interface FolderPickResult {
+  folder: string | null
+  files: string[]
+}
+
 export interface MyHeicAPI {
   selectFiles: () => Promise<string[]>
   selectDirectory: () => Promise<string | null>
+  selectFolderForFiles: () => Promise<FolderPickResult>
   convertHeic: (options: ConvertOptions) => Promise<ConvertResult>
   openPath: (target: string) => Promise<void>
   getPathForFile: (file: File) => string
