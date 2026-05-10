@@ -41,6 +41,7 @@ function App(): React.JSX.Element {
   const [isConverting, setIsConverting] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [showOnlyErrors, setShowOnlyErrors] = useState(false)
   const dragCounter = useRef(0)
   const { theme, toggle } = useTheme()
 
@@ -195,6 +196,15 @@ function App(): React.JSX.Element {
     return { total, done, errors }
   }, [files])
 
+  useEffect(() => {
+    if (stats.errors === 0 && showOnlyErrors) setShowOnlyErrors(false)
+  }, [stats.errors, showOnlyErrors])
+
+  const visibleFiles = useMemo(
+    () => (showOnlyErrors ? files.filter((f) => f.status === 'error') : files),
+    [files, showOnlyErrors]
+  )
+
   const canConvert = files.some((f) => f.status === 'pending' || f.status === 'error')
 
   return (
@@ -219,7 +229,7 @@ function App(): React.JSX.Element {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
           <span className="text-xs font-medium tabular-nums text-[color:var(--color-ink-soft)]">
-            v0.1.6
+            v0.1.7
           </span>
         </div>
       </header>
@@ -267,11 +277,28 @@ function App(): React.JSX.Element {
         )}
 
         <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] shadow-[var(--shadow-whisper)]">
-          <div className="flex items-center justify-between border-b border-[color:var(--color-line)] bg-[color:var(--color-surface-soft)] px-4 py-2.5 text-xs font-medium text-[color:var(--color-ink-muted)]">
-            <div>
-              {files.length === 0
-                ? 'Belum ada file'
-                : `${files.length} file · ${stats.done} selesai${stats.errors > 0 ? ` · ${stats.errors} error` : ''}`}
+          <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-line)] bg-[color:var(--color-surface-soft)] px-4 py-2.5 text-xs font-medium text-[color:var(--color-ink-muted)]">
+            <div className="flex items-center gap-3">
+              <span>
+                {files.length === 0
+                  ? 'Belum ada file'
+                  : `${files.length} file · ${stats.done} selesai${stats.errors > 0 ? ` · ${stats.errors} error` : ''}`}
+              </span>
+              {stats.errors > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowOnlyErrors((v) => !v)}
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors ${
+                    showOnlyErrors
+                      ? 'bg-[color:var(--color-danger-ink)] text-white'
+                      : 'bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-ink)] hover:opacity-80'
+                  }`}
+                >
+                  {showOnlyErrors
+                    ? 'Tampilkan semua'
+                    : `Tampilkan ${stats.errors} error`}
+                </button>
+              )}
             </div>
             {files.length > 0 && (
               <button
@@ -288,40 +315,64 @@ function App(): React.JSX.Element {
               <div className="flex h-full items-center justify-center p-8 text-sm text-[color:var(--color-ink-soft)]">
                 Tambahkan file untuk mulai konversi.
               </div>
+            ) : visibleFiles.length === 0 ? (
+              <div className="flex h-full items-center justify-center p-8 text-sm text-[color:var(--color-ink-soft)]">
+                Tidak ada file dengan filter ini.
+              </div>
             ) : (
               <ul className="divide-y divide-[color:var(--color-line)]">
-                {files.map((f) => (
-                  <li
-                    key={f.id}
-                    className="flex items-center gap-3 px-4 py-3 text-sm"
-                  >
-                    <StatusBadge status={f.status} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-[color:var(--color-ink)]">
-                        {f.name}
-                      </div>
-                      <div className="truncate text-xs text-[color:var(--color-ink-soft)]">
-                        {f.status === 'done'
-                          ? `${formatBytes(f.inputBytes)} → ${formatBytes(f.outputBytes)}${
-                              f.inputBytes && f.outputBytes
-                                ? ` (${(f.outputBytes / f.inputBytes).toFixed(1)}x)`
-                                : ''
-                            }`
-                          : f.status === 'error'
-                            ? f.error ?? 'Gagal konversi'
-                            : f.inputPath}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleRemove(f.id)}
-                      disabled={isConverting && f.status === 'converting'}
-                      className="text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)] disabled:opacity-40"
-                      aria-label="Hapus"
+                {visibleFiles.map((f) => {
+                  const isError = f.status === 'error'
+                  return (
+                    <li
+                      key={f.id}
+                      className={`flex items-center gap-3 border-l-2 px-4 py-3 text-sm transition-colors ${
+                        isError
+                          ? 'border-l-[color:var(--color-danger-ink)] bg-[color:var(--color-danger-bg)]/40'
+                          : 'border-l-transparent'
+                      }`}
                     >
-                      <CloseIcon />
-                    </button>
-                  </li>
-                ))}
+                      <StatusBadge status={f.status} />
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className={`truncate font-medium ${
+                            isError
+                              ? 'text-[color:var(--color-danger-ink)]'
+                              : 'text-[color:var(--color-ink)]'
+                          }`}
+                        >
+                          {f.name}
+                        </div>
+                        <div
+                          className={`truncate text-xs ${
+                            isError
+                              ? 'text-[color:var(--color-danger-ink)]/80'
+                              : 'text-[color:var(--color-ink-soft)]'
+                          }`}
+                          title={isError ? f.error ?? 'Gagal konversi' : f.inputPath}
+                        >
+                          {f.status === 'done'
+                            ? `${formatBytes(f.inputBytes)} → ${formatBytes(f.outputBytes)}${
+                                f.inputBytes && f.outputBytes
+                                  ? ` (${(f.outputBytes / f.inputBytes).toFixed(1)}x)`
+                                  : ''
+                              }`
+                            : isError
+                              ? f.error ?? 'Gagal konversi'
+                              : f.inputPath}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemove(f.id)}
+                        disabled={isConverting && f.status === 'converting'}
+                        className="text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)] disabled:opacity-40"
+                        aria-label="Hapus"
+                      >
+                        <CloseIcon />
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>
